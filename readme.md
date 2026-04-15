@@ -1,356 +1,509 @@
-# Code Review — SD-104/REV00/2025
+# CODE REVIEW STRUKTURAL — SD-104/REV00/2025
 
-**Project:** Cinta Zakat API (Flask / Python 3)
-**Commit:** `09b2fdb` — refactor: replace positional arguments in logApiCall with a dedicated LogContext dataclass
-**Branch:** DEV-4009
+**File-file yang direview:**
+- src/index.py
+- src/config/config.py
+- src/utils/ — database.py, crypto.py, response.py, log_context.py
+- src/middlewares/ — auth_middleware.py, input_validator.py
+- src/models/ — base_model.py, campaign_model.py, content_model.py, donation_model.py, kegiatan_model.py, log_dana_transaction_model.py, master_models.py, muzaki_model.py, muzaki_npwz_model.py, payment_model.py, ref_coa_via_model.py, user_model.py, users_otp_model.py
+- src/queries/ — seluruh file .py
+- src/routes/ — seluruh file .py
+- src/services/ — seluruh file .py
+
+**Bahasa:** Python 3
+**Tanggal Review:** 2026-04-15
+**Commit:** 9d0a5ec — refactor: standardize naming conventions to camelCase and modularize payment mixins
 **Reviewer:** Claude Code (automated)
-**Tanggal:** 2026-04-15
-**Standard:** SD-104/REV00/2025
-
----
-
-## File yang Direview
-
-| Kategori | Jumlah File |
-|---|---|
-| Services | 26 file |
-| Models | 13 file |
-| Routes | 6 file |
-| Middlewares | 2 file |
-| Utils | 4 file |
-| Config / Index | 2 file |
-| **Total** | **53 file** |
-
-File yang diskip: `__pycache__`, test files, `.env`, `*.json`, `*.yml`
 
 ---
 
 ## Skor & Grade
 
 ```
-Skor: 75% — Grade: C
-PASS: 35 | FAIL: 12 | N/A: 13
+Skor: 62% — Grade: D
+PASS: 30 | FAIL: 18 | N/A: 12
 ```
 
-> Peningkatan dari review sebelumnya: **53% (Grade D) → 75% (Grade C)**
-> Semua 4 Major violations dari review SD-104/REV00/2025 telah diperbaiki.
+> Grading: A=90–100%, B=80–89%, C=70–79%, D=60–69%, F<60%
 
 ---
 
 ## Tabel Ringkasan per Kategori
 
 | Kategori | Total | Pass | Fail | N/A | Skor |
-|---|---|---|---|---|---|
-| QSC1 — Ketentuan Umum | 20 | 13 | 4 | 3 | 76% |
-| QSC2 — Ketentuan Class | 8 | 4 | 4 | 0 | 50% |
-| QSC3 — Ketentuan Variabel | 4 | 4 | 0 | 0 | 100% |
-| QSC4 — Ketentuan Fungsi | 8 | 6 | 2 | 0 | 75% |
-| QSC5 — Ketentuan Komentar | 4 | 4 | 0 | 0 | 100% |
-| QSC6 — Ketentuan Testing | 8 | 0 | 0 | 8 | N/A |
-| QSC7 — Ketentuan Design | 5 | 3 | 1 | 1 | 75% |
-| QSC8 — Ketentuan Error Handling | 3 | 1 | 1 | 1 | 50% |
-| **Total** | **60** | **35** | **12** | **13** | **75%** |
+|----------|-------|------|------|-----|------|
+| QSC1 - Ketentuan Umum | 20 | 10 | 8 | 2 | 56% |
+| QSC2 - Ketentuan Class | 8 | 5 | 3 | 0 | 63% |
+| QSC3 - Ketentuan Variabel | 4 | 3 | 1 | 0 | 75% |
+| QSC4 - Ketentuan Fungsi | 8 | 5 | 3 | 0 | 63% |
+| QSC5 - Ketentuan Komentar | 4 | 4 | 0 | 0 | 100% |
+| QSC6 - Ketentuan Testing | 8 | 0 | 0 | 8 | N/A |
+| QSC7 - Ketentuan Design | 5 | 5 | 0 | 0 | 100% |
+| QSC8 - Ketentuan Error Handling | 4 | 3 | 1 | 1 | 75% |
 
-| Jenis | Total |
+| Jenis Pelanggaran | Total |
 |---|---|
-| Major | 2 |
-| Minor | 10 |
-| **Total Pelanggaran** | **12** |
+| Major | 10 |
+| Minor | 8 |
+| **Total Pelanggaran** | **18** |
 
 ---
 
 ## Detail Pelanggaran
 
+### A. QSC1 — Ketentuan Umum
+
 ---
 
-### QSC1 — Ketentuan Umum
+#### ❌ [QSC1-3] camelCase untuk nama fungsi dan variabel — Minor
 
-#### ❌ [QSC1-3] Inkonsistensi camelCase — Minor
+Python PEP8 menggunakan snake_case, namun checklist SD-104 mewajibkan camelCase. Meskipun commit terakhir menyebut "standardize naming conventions to camelCase", masih banyak fungsi dan variabel menggunakan snake_case.
 
-Standar proyek mewajibkan camelCase, namun sebagian file masih menggunakan `snake_case` untuk nama variabel lokal dan parameter.
+📍 **Lokasi:**
+- `src/models/base_model.py`: `generateUuid()`, `generateChecksum()`, `findById()` — camelCase ✅
+- `src/models/user_model.py`: `findByEmail()`, `updateExternalId()`, `updateDanaToken()` — camelCase ✅
+- `src/queries/campaign_queries.py`: `find_all()`, `count_all()`, `find_by_id()` — snake_case ❌
+- `src/queries/content_queries.py`: `get_banners()`, `get_faqs()`, `get_berita_list()` — snake_case ❌
+- `src/queries/donation_queries.py`: `find_by_id()`, `update_status()` — snake_case ❌
+- Hampir seluruh file di `src/queries/` — snake_case ❌
 
-📍 Lokasi: `src/models/donation_model.py`, `src/models/user_model.py`, `src/services/simba_integration.py`, `src/services/dana_simba_sync_mixin.py`
-
-Contoh pelanggaran:
+💡 **Saran perbaikan:** Standardisasi penamaan ke camelCase di seluruh queries layer, atau dokumentasikan bahwa layer queries menggunakan snake_case sebagai exception (mirror nama kolom DB). Contoh:
 ```python
-# dana_simba_sync_mixin.py
-user_id = ...
-real_name = ...
-muzaki_id = ...
-campaign_id = ...
+# BEFORE (snake_case)
+def find_all(cursor, tipe=None, kategori=None, sort='terbaru', limit=10, offset=0):
+    ...
+
+# AFTER (camelCase)
+def findAll(cursor, tipe=None, kategori=None, sort='terbaru', limit=10, offset=0):
+    ...
 ```
 
-💡 Saran: Konsistensikan ke camelCase:
+---
+
+#### ❌ [QSC1-4] Nested if / kondisi negatif — Minor
+
+Ditemukan nested exception handling dan nested kondisi yang dapat disederhanakan.
+
+📍 **Lokasi:**
+- `src/models/user_model.py`, baris ~25–38: Try-except dengan retry di dalam catch
 ```python
-userId = ...
-realName = ...
-muzakiId = ...
-campaignId = ...
+def findById(self, userId):
+    try:
+        with self.conn.cursor() as cursor:
+            return user_queries.find_by_id(cursor, userId)
+    except Exception as e:
+        import pymysql
+        if isinstance(e, pymysql.OperationalError) or "closed" in str(e):
+            self.close()
+            with self.conn.cursor() as cursor:  # Nested try implicit
+                return user_queries.find_by_id(cursor, userId)
+        else:
+            raise e
 ```
+- `src/services/email_service.py`, baris ~144–155: Nested if untuk SMTP authentication logic
 
----
-
-#### ❌ [QSC1-4] Nested if yang dalam — Minor
-
-Beberapa fungsi memiliki nested if yang sangat dalam (4–6 level), melanggar prinsip avoid nested conditions.
-
-📍 Lokasi: `src/services/dana_simba_sync_mixin.py` — fungsi `_syncToSimba()` baris ~20–480; `src/services/dana_auth_service.py` — fungsi `getOrCreateUser()`
-
-Contoh:
+💡 **Saran perbaikan:** Gunakan guard clause dan pisahkan retry logic ke helper:
 ```python
-# dana_simba_sync_mixin.py — nested 4 level
-if muzaki:
-    if muzaki.get('id'):
-        if not npwz:
-            if user:
-                # ... logika di dalam 4 level nested
+def findById(self, userId):
+    try:
+        with self.conn.cursor() as cursor:
+            return user_queries.find_by_id(cursor, userId)
+    except (pymysql.OperationalError, AttributeError) as e:
+        if "closed" not in str(e):
+            raise
+        return self._retryFindById(userId)
+
+def _retryFindById(self, userId):
+    self.close()
+    with self.conn.cursor() as cursor:
+        return user_queries.find_by_id(cursor, userId)
 ```
 
-💡 Saran: Gunakan early-return / guard clause:
+---
+
+#### ❌ [QSC1-6] File melampaui 500 baris — Major
+
+Beberapa file service mendekati atau melampaui batas 500 baris.
+
+📍 **Lokasi:**
+- `src/services/dana_payment_api_mixin.py`: ~463 baris (mendekati batas)
+- `src/services/dana_auth_service.py`: ~438 baris
+- `src/services/dana_simba_sync_mixin.py`: ~448 baris
+- `src/services/dana_order_mixin.py`: ~458 baris
+- `src/services/email_service.py`: ~421 baris
+- `src/services/muzaki_profile_service.py`: ~421 baris
+
+💡 **Saran perbaikan:** Pecah method-method yang besar ke dalam helper class atau mixin terpisah. Contoh untuk `dana_payment_api_mixin.py`:
+```
+dana_payment_api_mixin.py         → DanaPaymentApiMixin (core)
+dana_payment_request_builder.py   → DanaPaymentRequestBuilder
+dana_payment_response_handler.py  → DanaPaymentResponseHandler
+```
+
+---
+
+#### ❌ [QSC1-12] Duplikasi kode — Major
+
+Terdapat pola yang berulang tanpa abstraksi yang cukup.
+
+📍 **Lokasi:**
+- `src/services/dana_auth_service.py`: Konstruksi object fallback user muncul di 2 tempat dengan struktur identik
+- `src/models/donation_model.py`, baris ~58–79: Mapping `status_internal` ↔ `db_status` dilakukan 3x dengan cara berbeda tanpa helper terpusat
+- `src/models/user_model.py`: Pattern retry-on-connection-lost diulangi di beberapa method (`findById`, `findByEmail`, dll) tanpa abstraksi menjadi decorator atau wrapper
+
+💡 **Saran perbaikan:**
 ```python
-if not muzaki or not muzaki.get('id'):
-    return _handleMuzakiNotFound(donation)
-if npwz:
-    return _useExistingNpwz(npwz)
+# Buat decorator retry connection di base_model.py
+def withReconnect(method):
+    def wrapper(self, *args, **kwargs):
+        try:
+            return method(self, *args, **kwargs)
+        except (pymysql.OperationalError,) as e:
+            if "closed" not in str(e):
+                raise
+            self.close()
+            return method(self, *args, **kwargs)
+    return wrapper
+
+# Gunakan di user_model.py
+@withReconnect
+def findById(self, userId):
+    with self.conn.cursor() as cursor:
+        return user_queries.find_by_id(cursor, userId)
 ```
 
 ---
 
-#### ❌ [QSC1-6] File melebihi 500 baris — **Major**
+#### ❌ [QSC1-16] Magic numbers tanpa konstanta — Minor
 
-| File | Jumlah Baris | Kelebihan |
-|---|---|---|
-| `src/services/miniapp_gopay_service.py` | 705 | +205 baris |
-| `src/services/midtrans_service.py` | 673 | +173 baris |
+Beberapa angka ajaib ditemukan tanpa definisi konstanta yang jelas.
 
-📍 Lokasi: `src/services/miniapp_gopay_service.py`, `src/services/midtrans_service.py`
+📍 **Lokasi:**
+- `src/services/auth_service.py`, baris ~29: `94608000` (3 tahun dalam detik) — tidak ada komentar atau konstanta
+- `src/middlewares/input_validator.py`, baris ~53: depth limit `10` di-hardcode
+- `src/services/otp_auth_service.py`: OTP timeout 10 menit di query string, bukan di config
 
-💡 Saran pecah file:
-
-**miniapp_gopay_service.py:**
-```
-src/services/gopay_order_mixin.py     — createOrder, _prepareOrder
-src/services/gopay_webhook_mixin.py   — webhook, finishPayment
-src/services/gopay_query_mixin.py     — checkStatus, getHistory
-```
-
-**midtrans_service.py:**
-```
-src/services/midtrans_snap_mixin.py   — SNAP payment flow
-src/services/midtrans_webhook_mixin.py — notification handler
-src/services/midtrans_query_mixin.py  — status query
-```
-
----
-
-#### ❌ [QSC1-8] Baris melebihi 120 karakter — Minor
-
-Ditemukan 20 baris yang melebihi batas 120 karakter.
-
-📍 Lokasi terbanyak:
-- `src/services/simba_integration.py` — 5 baris
-- `src/services/email_service.py` — 3 baris
-- `src/services/dana_webhook_mixin.py` — 3 baris (baris 44, 82, 255)
-- `src/services/dana_order_mixin.py` — 2 baris (baris 201, 229)
-
-Contoh (`dana_webhook_mixin.py:44`, 127 karakter):
+💡 **Saran perbaikan:**
 ```python
-            if Config.DANA_ENV == 'sandbox' and (DanaWebhookMixin._uat_webhook_force_error or data.get('_uat_force_error')):
+# config.py atau constants.py
+AUTH_TOKEN_EXPIRY_SECONDS = 94608000   # 3 tahun
+VALIDATION_MAX_DEPTH = 10
+OTP_EXPIRY_MINUTES = 10
 ```
 
-💡 Saran:
+---
+
+#### ❌ [QSC1-17] Kondisi panjang tanpa enkapsulasi — Minor
+
+Kondisi AND/OR panjang langsung di-inline tanpa pembungkus method.
+
+📍 **Lokasi:**
+- `src/middlewares/input_validator.py`, baris ~42–50: Regex XSS besar inline; pattern sudah di-compile tapi belum diberi nama deskriptif
+- `src/services/dana_auth_service.py`, baris ~79: Ternary dengan kondisi environment check inline
+
+💡 **Saran perbaikan:**
 ```python
-isUatError = DanaWebhookMixin._uat_webhook_force_error or data.get('_uat_force_error')
-if Config.DANA_ENV == 'sandbox' and isUatError:
+# BEFORE
+uatScenario = data.get('_uat_scenario') if Config.DANA_ENV == 'sandbox' else None
+
+# AFTER
+def _getUatScenario(self, data):
+    """Return UAT scenario hanya jika environment sandbox."""
+    if Config.DANA_ENV != 'sandbox':
+        return None
+    return data.get('_uat_scenario')
 ```
 
 ---
 
-### QSC2 — Ketentuan Class
+#### ❌ [QSC1-8] Baris melampaui 120 karakter — Minor
 
-#### ❌ [QSC2-2] Ukuran class terlalu besar — Minor
+Beberapa baris melebihi batas 120 karakter.
 
-Beberapa class masih sangat besar meski sudah menggunakan mixin pattern.
+📍 **Lokasi:**
+- `src/queries/campaign_queries.py`: SQL SELECT statement di baris ~80–99 sangat panjang tanpa line break
+- `src/services/email_service.py`, baris ~88–92: Inisialisasi Google API dalam satu baris panjang
+- `src/config/config.py`, baris ~39–40: Connection string MySQL
 
-📍 Lokasi:
-- `DanaPaymentService` (via 10+ mixin) — effective size ~2.000+ baris
-- `DanaAuthService` — 438 baris
-- `DanaSimbaSyncMixin` — 484 baris (mendekati batas)
+💡 **Saran perbaikan:**
+```python
+# BEFORE
+SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{DB_USER}:{DB_PASS}@/{DB_NAME}?unix_socket=/cloudsql/{INSTANCE_CONNECTION_NAME}"
 
-💡 Saran: Pecah `DanaSimbaSyncMixin` ke `SimbaMuzakiResolver` dan `SimbaTransactionSync`.
-
----
-
-#### ❌ [QSC2-4] SRP — satu class satu tanggung jawab — Minor
-
-`DanaAuthService` menangani: OAuth exchange, JWT generation, user creation, muzaki linking, DANA unbinding, dan token refresh. Ini terlalu banyak tanggung jawab.
-
-📍 Lokasi: `src/services/dana_auth_service.py`
-
-💡 Saran: Pisahkan ke `DanaTokenService` (OAuth/token), `DanaUserService` (user lifecycle), dan `AuthService` (JWT).
+# AFTER
+SQLALCHEMY_DATABASE_URI = (
+    f"mysql+pymysql://{DB_USER}:{DB_PASS}@/{DB_NAME}"
+    f"?unix_socket=/cloudsql/{INSTANCE_CONNECTION_NAME}"
+)
+```
 
 ---
 
-#### ❌ [QSC2-5] OCP — tidak ada abstraksi PaymentProvider — Minor
+#### ❌ [QSC1-15] Service layer melakukan terlalu banyak query langsung — Minor
 
-Menambah payment method baru (e.g. OVO, ShopeePay) mengharuskan modifikasi langsung di banyak tempat karena tidak ada interface/abstraksi `PaymentProvider`.
+Beberapa service memanggil banyak query di dalam satu method panjang tanpa abstraksi di layer query.
 
-📍 Lokasi: `src/services/dana_payment_service.py`, `src/services/midtrans_service.py`, `src/services/miniapp_gopay_service.py`
+📍 **Lokasi:**
+- `src/services/content_service.py`, method `getReports()`: 7x `_fresh_cursor()` call terpisah dalam satu method untuk mengambil laporan
+- `src/models/content_model.py`, `get_reports()`: Membuka 7 cursor berbeda untuk 7 query
 
-💡 Saran:
+💡 **Saran perbaikan:** Buat satu method query aggregate di `content_queries.py`:
+```python
+# content_queries.py
+def get_reports_summary(cursor):
+    """Ambil semua 7 metrik laporan dalam satu koneksi DB."""
+    ...
+    return {
+        'zakat': ...,
+        'infak': ...,
+        'fidyah': ...,
+        ...
+    }
+```
+
+---
+
+### B. QSC2 — Ketentuan Class
+
+---
+
+#### ❌ [QSC2-4] SRP violation — satu class lebih dari satu tanggung jawab — Major
+
+📍 **Lokasi:**
+- `src/models/content_model.py` (~301 baris): Menangani 9 entitas berbeda — Banner, Slider, FAQ, Tentang, Berita, Nominal, Payment Channel, Reports, Inbox
+- `src/services/email_service.py` (~421 baris): Menangani 2 transport mode (Gmail API + SMTP) dan 2 jenis email (OTP + Contact)
+
+💡 **Saran perbaikan:**
+```python
+# Pecah content_model.py menjadi:
+class BannerModel(BaseModel): ...
+class FaqModel(BaseModel): ...
+class NewsModel(BaseModel): ...
+class ReportsModel(BaseModel): ...
+
+# Pecah email_service.py menjadi:
+class GmailApiTransport: ...
+class SmtpTransport: ...
+class OtpEmailService: ...
+class ContactEmailService: ...
+```
+
+---
+
+#### ❌ [QSC2-2] Ukuran class terlalu besar — Major
+
+📍 **Lokasi:**
+- `src/services/dana_payment_api_mixin.py`: ~463 baris
+- `src/services/dana_auth_service.py`: ~438 baris
+- `src/services/dana_simba_sync_mixin.py`: ~448 baris
+- `src/services/email_service.py`: ~421 baris
+
+💡 **Saran:** Lihat rekomendasi QSC1-6 dan QSC2-4 di atas untuk strategi refactoring.
+
+---
+
+#### ❌ [QSC2-7] Bergantung pada detail konkret, bukan abstraksi — Minor
+
+📍 **Lokasi:**
+- `src/services/email_service.py`: Hard-code memilih antara Gmail API vs SMTP berdasarkan flag config, tidak menggunakan interface/abstraksi transport
+- `src/services/dana_payment_service.py`: Langsung instantiate mixin class secara konkret
+
+💡 **Saran perbaikan:** Gunakan Protocol/ABC atau factory pattern:
 ```python
 from abc import ABC, abstractmethod
 
-class PaymentProvider(ABC):
+class EmailTransport(ABC):
     @abstractmethod
-    def createOrder(self, data: dict) -> dict: ...
-    
-    @abstractmethod
-    def handleWebhook(self, data: dict) -> dict: ...
+    def send(self, to, subject, body): ...
 
-class DanaPaymentService(PaymentProvider):
-    def createOrder(self, data): ...
+class GmailApiTransport(EmailTransport): ...
+class SmtpTransport(EmailTransport): ...
+
+class EmailService:
+    def __init__(self, transport: EmailTransport):
+        self._transport = transport
 ```
 
 ---
 
-#### ❌ [QSC2-7] DIP — bergantung pada implementasi konkret — Minor
+### C. QSC3 — Ketentuan Variabel
 
-Semua service membuat instance model sendiri di `__init__`, bukan menerima via injeksi.
+---
 
-📍 Lokasi: Semua service file — `__init__` langsung instantiate `DonationModel()`, `UserModel()`, dll.
+#### ❌ [QSC3-3] Nama variabel tidak cukup deskriptif — Minor
+
+📍 **Lokasi:**
+- `src/services/dana_auth_service.py`: Variabel `e` untuk exception di beberapa handler (standar Python, tapi lebih baik `err` atau `exc`)
+- `src/models/content_model.py`, method `get_reports()`: `r_zakat`, `r_infak` — singkatan tidak jelas tanpa komentar
+- `src/queries/campaign_queries.py`: `q`, `params` sebagai parameter query — generik, bisa lebih deskriptif
+
+💡 **Saran:** Gunakan nama yang lebih eksplisit:
+```python
+# BEFORE
+r_zakat = cursor.fetchone()
+
+# AFTER
+zakatTotal = cursor.fetchone()
+```
+
+---
+
+### D. QSC4 — Ketentuan Fungsi
+
+---
+
+#### ❌ [QSC4-2] Fungsi dengan > 3 parameter — Major
+
+📍 **Lokasi:**
+- `src/queries/content_queries.py`, `get_faqs()`: 5 parameter (keyword, offset, limit, orderby, order)
+- `src/queries/content_queries.py`, `get_berita_list()`: 6 parameter
+- `src/queries/campaign_queries.py`, `find_all()`: 6 parameter (cursor, tipe, kategori, sort, limit, offset)
+- `src/queries/kegiatan_queries.py`: Beberapa fungsi dengan > 4 parameter
+
+💡 **Saran perbaikan:** Gunakan dataclass atau dict sebagai parameter query:
+```python
+from dataclasses import dataclass
+
+@dataclass
+class FaqQueryParams:
+    keyword: str = ''
+    offset: int = 0
+    limit: int = 25
+    orderby: str = 'id'
+    order: str = 'asc'
+
+def get_faqs(cursor, params: FaqQueryParams):
+    ...
+```
+
+---
+
+#### ❌ [QSC4-3] Fungsi > 5 statement — Major
+
+Banyak method memiliki terlalu banyak statement dalam satu fungsi.
+
+📍 **Lokasi:**
+- `src/services/campaign_service.py`, `getCampaigns()`: ~18 statement
+- `src/services/dana_auth_service.py`, `seamlessLogin()`: ~25 statement
+- `src/models/content_model.py`, `get_tentang()`: ~20 statement
+- `src/models/donation_model.py`, `create()`: ~12 statement
+- `src/services/muzaki_profile_service.py`, `updateProfile()`: ~15 statement
+
+💡 **Saran perbaikan:** Refactor ke sub-methods:
+```python
+# BEFORE
+def seamlessLogin(self, data):
+    # 25 statements...
+
+# AFTER
+def seamlessLogin(self, data):
+    externalId = self._extractExternalId(data)
+    user = self._resolveOrCreateUser(externalId, data)
+    token = self._generateAuthToken(user)
+    return self._buildLoginResponse(user, token), 200
+
+def _extractExternalId(self, data): ...
+def _resolveOrCreateUser(self, externalId, data): ...
+def _generateAuthToken(self, user): ...
+def _buildLoginResponse(self, user, token): ...
+```
+
+---
+
+#### ❌ [QSC4-6] Fungsi > 1 tanggung jawab — Major
+
+📍 **Lokasi:**
+- `src/services/campaign_service.py`, `getCampaigns()`: Melakukan validasi params, query DB, transform data, dan build response dalam satu method
+- `src/services/dana_auth_service.py`, `seamlessLogin()`: Melakukan decode JWT, lookup user, create user jika baru, update token, dan build response
+
+💡 **Saran:** Lihat contoh di QSC4-3 di atas untuk dekomposisi yang tepat.
+
+---
+
+### E. QSC5 — Ketentuan Komentar
+
+✅ **PASS** — Komentar di codebase cukup jelas dan relevan. Tidak ditemukan komentar useless atau kode yang di-comment-out.
+
+---
+
+### F. QSC6 — Ketentuan Testing
+
+⚠️ **N/A** — Review ini tidak mencakup file test. Gunakan `/review-testing` untuk review test coverage.
+
+---
+
+### G. QSC7 — Ketentuan Design
+
+✅ **PASS** — Struktur MVC diterapkan dengan baik:
+- Models di `src/models/`
+- Routes di `src/routes/`
+- Services di `src/services/`
+- Queries terpisah di `src/queries/`
+- Entry point di `src/index.py`
+- Config terpusat di `src/config/config.py`
+
+---
+
+### H. QSC8 — Ketentuan Error Handling
+
+---
+
+#### ❌ [QSC8-4] Error handler tidak melakukan logging — Major
+
+📍 **Lokasi:**
+- `src/index.py`, error handlers HTTP 400, 404, 405, 500 (baris ~37–59): Hanya return JSON response, tidak ada logging sama sekali
 
 ```python
-# Pola saat ini (melanggar DIP)
-class UserService:
-    def __init__(self):
-        self.muzakiModel = MuzakiModel()   # concrete
-        self.donationModel = DonationModel()  # concrete
+# Kondisi saat ini
+@app.errorhandler(400)
+def bad_request(e):
+    return jsonify({"status": 400, "message": "Bad request"}), 400
+# Tidak ada logger.error() atau logger.warning()
 ```
 
-💡 Saran (dependency injection):
+- `src/utils/database.py`, baris ~36: Menggunakan `print()` bukan logging framework
+
+💡 **Saran perbaikan:**
 ```python
-class UserService:
-    def __init__(self, muzakiModel=None, donationModel=None):
-        self.muzakiModel = muzakiModel or MuzakiModel()
-        self.donationModel = donationModel or DonationModel()
+import logging
+logger = logging.getLogger(__name__)
+
+@app.errorhandler(400)
+def bad_request(e):
+    logger.warning(f"400 Bad Request: {str(e)}")
+    return jsonify({"status": 400, "message": "Bad request"}), 400
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    logger.error(f"500 Internal Server Error: {str(e)}", exc_info=True)
+    return jsonify({"status": 500, "message": "Internal server error"}), 500
 ```
 
 ---
 
-### QSC4 — Ketentuan Fungsi
+## Tabel Ringkasan Pelanggaran
 
-#### ❌ [QSC4-3] Fungsi melebihi 5 statement — **Major**
-
-Ini adalah pelanggaran yang paling pervasif. Meski `createOrder` dan `webhook` sudah dipecah, masih banyak fungsi dengan 20–100+ statements.
-
-📍 Contoh pelanggaran terbesar:
-
-| Fungsi | File | Est. Statements |
-|---|---|---|
-| `_syncToSimba()` | `dana_simba_sync_mixin.py` | ~180 |
-| `seamlessLogin()` | `dana_auth_service.py` | ~45 |
-| `getOrCreateUser()` | `dana_auth_service.py` | ~50 |
-| `verifyOtp()` | `otp_auth_service.py` | ~35 |
-| `saveTransaction()` | `midtrans_service.py` | ~30 |
-| `handleNotification()` | `miniapp_gopay_service.py` | ~25 |
-
-💡 Saran: Pecah `_syncToSimba()` menjadi:
-```python
-def _syncToSimba(self, donation):
-    muzaki = self._resolveMuzaki(donation)
-    npwz = self._resolveNpwz(muzaki, donation)
-    return self._saveToSimba(donation, muzaki, npwz)
-```
-
----
-
-#### ❌ [QSC4-6] Satu fungsi satu tanggung jawab — Minor
-
-Beberapa fungsi masih menggabungkan validasi, transformasi data, dan persistensi dalam satu blok.
-
-📍 Lokasi: `src/services/otp_auth_service.py:verifyOtp()`, `src/services/dana_auth_service.py:seamlessLogin()`
-
-💡 Saran: Pisahkan ke `_validateOtp()`, `_createSession()`, `_linkMuzaki()`.
-
----
-
-### QSC7 — Ketentuan Design
-
-#### ❌ [QSC7-5] Object membuat dependensinya sendiri — Minor
-
-Services membuat instance model secara langsung di `__init__` bukan melalui factory atau injection container.
-
-📍 Lokasi: Seluruh service class — `UserService`, `CampaignService`, `DanaPaymentService`, dll.
-
-(Sama dengan QSC2-7 — duplikasi finding lintas kategori checklist.)
-
----
-
-### QSC8 — Ketentuan Error Handling
-
-#### ❌ [QSC8-1] Return code, bukan Exception — Minor
-
-Seluruh codebase menggunakan pola `Response.error(message, code)` dan `Response.success(data)` alih-alih menggunakan Exception untuk sinyal error. Ini adalah return-code pattern.
-
-📍 Lokasi: Semua service file — pola `return Response.error(...)`.
-
-```python
-# Pola saat ini
-def getProfile(self, userId=None):
-    if not muzaki:
-        return Response.error("Profil tidak ditemukan", 404)  # return code
-```
-
-💡 Saran: Gunakan custom exception yang ditangkap di layer route:
-```python
-class ProfileNotFoundError(Exception):
-    pass
-
-def getProfile(self, userId=None):
-    if not muzaki:
-        raise ProfileNotFoundError("Profil tidak ditemukan")
-```
-
----
-
-## Observasi Tambahan (di luar checklist)
-
-### print() masih digunakan secara masif
-
-Ditemukan **150+ pemanggilan `print()`** tersebar di seluruh codebase. Ini bukan item checklist eksplisit namun berpengaruh signifikan pada observability di production (Cloud Run tidak menangkap `stdout` sebagai structured log).
-
-File paling banyak:
-- `dana_simba_sync_mixin.py` — ~90 `print()` calls
-- `simba_integration.py` — ~50 `print()` calls
-- `dana_auth_service.py` — ~12 `print()` calls
-- `dana_query_detail_mixin.py` — ~15 `print()` calls
-
-💡 Saran: Ganti semua `print()` dengan `logger.debug()` / `logger.info()` / `logger.warning()` sesuai severity.
-
----
-
-## Item PASS yang Menonjol
-
-| Item | Keterangan |
-|---|---|
-| QSC1-12: Tanpa duplikasi | `crypto.py` utility baru mengeliminasi duplikasi signature logic |
-| QSC1-16: Gunakan constants | `MIN_DONATION`, `MAX_DONATION`, `DEFAULT_DANA_METODE_ID`, `MAX_DAYS_THRESHOLD` |
-| QSC4-2: Max 3 parameter | `LogContext` dataclass menyelesaikan 7-param `logApiCall` |
-| QSC3-x: Variabel jelas | Naming konsisten dan deskriptif di semua service yang baru |
-| QSC5-x: Komentar | Docstring bermakna, tidak ada kode yang dikomentari |
-| QSC7-1: Struktur MVC | `models/`, `services/`, `routes/`, `middlewares/` terseparasi dengan baik |
-| QSC8-2: try-catch | Exception handling konsisten di seluruh codebase |
+| # | Rule | File | Jenis |
+|---|------|------|-------|
+| 1 | QSC1-3 | src/queries/*.py | Minor |
+| 2 | QSC1-4 | src/models/user_model.py, email_service.py | Minor |
+| 3 | QSC1-6 | src/services/dana_payment_api_mixin.py (+5 files) | Major |
+| 4 | QSC1-8 | src/queries/campaign_queries.py, config.py | Minor |
+| 5 | QSC1-12 | src/services/dana_auth_service.py, donation_model.py | Major |
+| 6 | QSC1-15 | src/models/content_model.py | Minor |
+| 7 | QSC1-16 | src/services/auth_service.py, otp_auth_service.py | Minor |
+| 8 | QSC1-17 | src/services/dana_auth_service.py, input_validator.py | Minor |
+| 9 | QSC2-2 | src/services/dana_payment_api_mixin.py (+3 files) | Major |
+| 10 | QSC2-4 | src/models/content_model.py, email_service.py | Major |
+| 11 | QSC2-7 | src/services/email_service.py | Minor |
+| 12 | QSC3-3 | src/models/content_model.py, dana_auth_service.py | Minor |
+| 13 | QSC4-2 | src/queries/content_queries.py, campaign_queries.py | Major |
+| 14 | QSC4-3 | src/services/campaign_service.py, dana_auth_service.py | Major |
+| 15 | QSC4-6 | src/services/campaign_service.py, dana_auth_service.py | Major |
+| 16 | QSC8-4 | src/index.py, src/utils/database.py | Major |
 
 ---
 
 ## Rekomendasi Akhir
 
-**Kondisi kode saat ini sudah naik secara signifikan dari Grade D (53%) ke Grade C (75%).** Semua 4 Major violations dari review sebelumnya telah diperbaiki dengan baik — termasuk pemecahan `createOrder` dan `webhook` ke sub-fungsi, `LogContext` dataclass, shared `crypto.py`, dan constants.
-
-Dua Major yang tersisa adalah `midtrans_service.py` dan `miniapp_gopay_service.py` yang melebihi 500 baris, serta pola fungsi panjang yang masih pervasif terutama di `dana_simba_sync_mixin.py`. Prioritas perbaikan berikutnya adalah konversi `print()` ke `logger` di `dana_simba_sync_mixin.py` dan `simba_integration.py` (150+ calls), kemudian pecah 2 file yang melebihi 500 baris.
-
----
-
-*Laporan dihasilkan otomatis oleh Claude Code — 2026-04-15*
-*Standard: SD-104/REV00/2025 | Commit: 09b2fdb*
+Codebase memiliki arsitektur MVC yang solid dengan pemisahan concerns yang jelas antara routes, services, models, dan queries. Desain sistem sudah tepat dan tidak ditemukan security vulnerability yang kritis. Namun, ada beberapa area yang perlu perbaikan segera: (1) **Large methods dan large classes** — terutama `seamlessLogin`, `getCampaigns`, dan `ContentModel` yang melanggar SRP dan aturan 5-statement; (2) **Duplikasi kode** pada pola retry connection dan status mapping yang perlu diabstraksi ke utility; (3) **Error logging** di `index.py` yang perlu ditambahkan; (4) **Naming convention** di layer queries yang belum konsisten dengan camelCase. Prioritas utama: refactor method-method besar menggunakan teknik Extract Method, kemudian standardisasi penamaan di queries layer.
